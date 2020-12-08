@@ -18,9 +18,13 @@ void turnOrder(Player &turn, vector<Player> &players, int numPlayers);
 void takeTurn(Player &player, vector<Player> &players);
 int rollingPhase(int numRolls);
 void incomePhase(int roll, Player &player, vector<Player> &players);
-void activateEstablishment(Establishment establishment, Player &player, Player &roller, int numTimes, int shoppingMallBonus);
+int activateEstablishment(Establishment establishment, Player &player, Player &roller, int numTimes, int shoppingMallBonus);
 int uniqueEntries(vector<Establishment> cards);
 void printMarket(vector<Establishment> market, vector<int> amounts);
+void activateReds(int roll, Player &player, vector<Player> &players);
+void activateGreens(int roll, Player &player);
+void activateBlues(int roll, Player &player, vector<Player> &players);
+void activatePurples(int roll, Player &player);
 void giveCoins(Player &player, int numCoins);
 void giveCoins(Player &playerRecieving, Player &playerGiving, int numCoins);
 int FUCKYOU();
@@ -298,69 +302,13 @@ int rollingPhase(int numRolls)
 
 void incomePhase(int roll, Player &player, vector<Player> &players)
 {
-	//Red card phase (looping through all establishments of all players)
-	for (unsigned int i = 0; i < players.size(); i++) {
-		for (unsigned int j = 0; j < players.at(i).GetEstablishments().size(); j++) {
-			Establishment curr = players.at(i).GetEstablishments().at(j);
-			int numCurr = players.at(i).GetEstablishmentNums().at(j);
-			if (curr.GetColor() == "Red") {
-				if (roll >= curr.GetActivation() && roll <= curr.GetActivation() + curr.GetActivationRange()) {
-					int shoppingMallBonus = 0;
-					if (player.GetLandmarks().at(3).GetConstructed() && (curr.GetType() == "Cup" || curr.GetType() == "Bread")) {
-						shoppingMallBonus = 1;
-					}
-					activateEstablishment(curr, players.at(i), player, numCurr, shoppingMallBonus);
-				}
-			}
-		}
-	}
-	//Green card phase (looping through all establishments of current player)
-	for (unsigned int i = 0; i < player.GetEstablishments().size(); i++) {
-		Establishment curr = player.GetEstablishments().at(i);
-		int numCurr = player.GetEstablishmentNums().at(i);
-		if (curr.GetColor() == "Green") {
-			if (roll >= curr.GetActivation() && roll <= curr.GetActivation() + curr.GetActivationRange()) {
-				int shoppingMallBonus = 0;
-				if (player.GetLandmarks().at(3).GetConstructed() && (curr.GetType() == "Cup" || curr.GetType() == "Bread")) {
-					shoppingMallBonus = 1;
-				}
-				activateEstablishment(curr, player, player, numCurr, shoppingMallBonus);
-			}
-		}
-	}
-	//Blue card phase (looping through all establishments of all players)
-	for (unsigned int i = 0; i < players.size(); i++) {
-		for (unsigned int j = 0; j < players.at(i).GetEstablishments().size(); j++) {
-			Establishment curr = players.at(i).GetEstablishments().at(j);
-			int numCurr = players.at(i).GetEstablishmentNums().at(j);
-			if (curr.GetColor() == "Blue") {
-				if (roll >= curr.GetActivation() && roll <= curr.GetActivation() + curr.GetActivationRange()) {
-					int shoppingMallBonus = 0;
-					if (player.GetLandmarks().at(3).GetConstructed() && (curr.GetType() == "Cup" || curr.GetType() == "Bread")) {
-						shoppingMallBonus = 1;
-					}
-					activateEstablishment(curr, players.at(i), player, numCurr, shoppingMallBonus);
-				}
-			}
-		}
-	}
-	//Purple card phase (looping through all establishments of current player)
-	for (unsigned int i = 0; i < player.GetEstablishments().size(); i++) {
-		Establishment curr = player.GetEstablishments().at(i);
-		int numCurr = player.GetEstablishmentNums().at(i);
-		if (curr.GetColor() == "Purple") {
-			if (roll >= curr.GetActivation() && roll <= curr.GetActivation() + curr.GetActivationRange()) {
-				int shoppingMallBonus = 0;
-				if (player.GetLandmarks().at(3).GetConstructed() && (curr.GetType() == "Cup" || curr.GetType() == "Bread")) {
-					shoppingMallBonus = 1;
-				}
-				activateEstablishment(curr, player, player, numCurr, shoppingMallBonus);
-			}
-		}
-	}
+	activateReds(roll, player, players);
+	activateGreens(roll, player);
+	activateBlues(roll, player, players);
+	activatePurples(roll, player);
 }
 
-void activateEstablishment(Establishment establishment, Player &player, Player &roller, int numTimes, int shoppingMallBonus)
+int activateEstablishment(Establishment establishment, Player &player, Player &roller, int numTimes, int shoppingMallBonus)
 {
 	if (numTimes == 1) {
 		cout << player.GetName() << "'s " << establishment.GetName() << " activated!" << endl;
@@ -381,19 +329,20 @@ void activateEstablishment(Establishment establishment, Player &player, Player &
 	if (establishment.GetColor() == "Blue") {
 		if (establishment.GetName() == "Wheat Field" || establishment.GetName() == "Ranch" || establishment.GetName() == "Flower Orchard" || establishment.GetName() == "Forest") {
 			//These cards all have the same effect
-			giveCoins(player, (1 + shoppingMallBonus) * numTimes);
+			return 1;
 		}
 		else if (establishment.GetName() == "Mackerel Boat") {
 			bool hasHarbor = player.GetLandmarks().at(1).GetConstructed();
 			if (hasHarbor) {
-				giveCoins(player, (3 + shoppingMallBonus) * numTimes);
+				return 3;
 			}
 			else {
 				cout << "But " << player.GetName() << " does not have a Harbor." << endl;
+				return -1;
 			}
 		}
 		else if (establishment.GetName() == "Apple Orchard") {
-			giveCoins(player, (3 + shoppingMallBonus) * numTimes);
+			return 3;
 		}
 		else if (establishment.GetName() == "Tuna Boat") {
 			cout << roller.GetName() << " has to roll 2 dice." << endl;
@@ -405,7 +354,7 @@ void activateEstablishment(Establishment establishment, Player &player, Player &
 				diceTotal += roll;
 			}
 			cout << endl;
-			giveCoins(player, (diceTotal + shoppingMallBonus) * numTimes);
+			return diceTotal;
 		}
 	}
 	else if (establishment.GetColor() == "Green") {
@@ -417,14 +366,15 @@ void activateEstablishment(Establishment establishment, Player &player, Player &
 				}
 			}
 			if (count < 2) {
-				giveCoins(player, (2 + shoppingMallBonus) * numTimes);
+				return 2;
 			}
 			else {
 				cout << "But you have more than 2 landmarks constructed." << endl;
+				return -1;
 			}
 		}
 		else if (establishment.GetName() == "Bakery") {
-			giveCoins(player, (1 + shoppingMallBonus) * numTimes);
+			return 1;
 		}
 		else if (establishment.GetName() == "Demolition Company") {
 			int count = -1;
@@ -464,7 +414,7 @@ void activateEstablishment(Establishment establishment, Player &player, Player &
 						i--;
 					}
 				}
-				giveCoins(player, (8 + shoppingMallBonus) * numTimes);
+				return 8;
 			}
 			else {
 				cout << "But you do not have any landmarks constructed." << endl;
@@ -488,15 +438,41 @@ void activateEstablishment(Establishment establishment, Player &player, Player &
 				cout << "You have one Flower Orchard." << endl;
 			}
 			else {
-				cout << "You hvae " << numFlowerGardens << " Flower Orchards." << endl;
+				cout << "You have " << numFlowerGardens << " Flower Orchards." << endl;
 			}
-			giveCoins(player, (numFlowerGardens + shoppingMallBonus) * numTimes);
+			return numFlowerGardens;
 		}
 		else if (establishment.GetName() == "Cheese Factory") {
-
+			int numCows = 0;
+			for (int i = 0; i < player.GetEstablishments().size(); i++) {
+				if (player.GetEstablishments().at(i).GetType() == "Cow") numCows += player.GetEstablishmentNums().at(i);
+			}
+			if (numCows == 0) {
+				cout << "You have no Cow establishments." << endl;
+			}
+			else if (numCows == 1) {
+				cout << "You have one Cow establishment." << endl;
+			}
+			else {
+				cout << "You have " << numCows << " Cow establishments." << endl;
+			}
+			return numCows;
 		}
 		else if (establishment.GetName() == "Furniture Factory") {
-
+			int numGears = 0;
+			for (int i = 0; i < player.GetEstablishments().size(); i++) {
+				if (player.GetEstablishments().at(i).GetType() == "Cow") numGears += player.GetEstablishmentNums().at(i);
+			}
+			if (numGears == 0) {
+				cout << "You have no Gear establishments." << endl;
+			}
+			else if (numGears == 1) {
+				cout << "You have one Gear establishment." << endl;
+			}
+			else {
+				cout << "You have " << numGears << " Gear establishments." << endl;
+			}
+			return numGears;
 		}
 		else if (establishment.GetName() == "Moving Company") {
 
@@ -572,6 +548,94 @@ void printMarket(vector<Establishment> market, vector<int> amounts)
 {
 	for (unsigned int i = 0; i < market.size(); i++) {
 		market.at(i).Print(amounts.at(i));
+	}
+}
+
+void activateReds(int roll, Player &player, vector<Player> &players) {
+	//Red card phase (looping through all establishments of all players)
+	for (unsigned int i = 0; i < players.size(); i++) {
+		for (unsigned int j = 0; j < players.at(i).GetEstablishments().size(); j++) {
+			Establishment curr = players.at(i).GetEstablishments().at(j);
+			int numCurr = players.at(i).GetEstablishmentNums().at(j);
+			if (curr.GetColor() == "Red") {
+				if (roll >= curr.GetActivation() && roll <= curr.GetActivation() + curr.GetActivationRange()) {
+					int shoppingMallBonus = 0;
+					if (player.GetLandmarks().at(3).GetConstructed() && (curr.GetType() == "Cup" || curr.GetType() == "Bread")) {
+						shoppingMallBonus = 1;
+					}
+					int numCoins = -1;
+					numCoins = activateEstablishment(curr, players.at(i), player, numCurr, shoppingMallBonus);
+					if (numCoins != -1) {
+						giveCoins(player, (1 + shoppingMallBonus) * numCurr);
+					}
+				}
+			}
+		}
+	}
+}
+
+void activateGreens(int roll, Player &player) {
+	//Green card phase (looping through all establishments of current player)
+	for (unsigned int i = 0; i < player.GetEstablishments().size(); i++) {
+		Establishment curr = player.GetEstablishments().at(i);
+		int numCurr = player.GetEstablishmentNums().at(i);
+		if (curr.GetColor() == "Green") {
+			if (roll >= curr.GetActivation() && roll <= curr.GetActivation() + curr.GetActivationRange()) {
+				int shoppingMallBonus = 0;
+				if (player.GetLandmarks().at(3).GetConstructed() && (curr.GetType() == "Cup" || curr.GetType() == "Bread")) {
+					shoppingMallBonus = 1;
+				}
+				int numCoins = -1;
+				numCoins = activateEstablishment(curr, player, player, numCurr, shoppingMallBonus);
+				if (numCoins != -1) {
+					giveCoins(player, (1 + shoppingMallBonus) * numCurr);
+				}
+			}
+		}
+	}
+}
+
+void activateBlues(int roll, Player &player, vector<Player> &players) {
+	//Blue card phase (looping through all establishments of all players)
+	for (unsigned int i = 0; i < players.size(); i++) {
+		for (unsigned int j = 0; j < players.at(i).GetEstablishments().size(); j++) {
+			Establishment curr = players.at(i).GetEstablishments().at(j);
+			int numCurr = players.at(i).GetEstablishmentNums().at(j);
+			if (curr.GetColor() == "Blue") {
+				if (roll >= curr.GetActivation() && roll <= curr.GetActivation() + curr.GetActivationRange()) {
+					int shoppingMallBonus = 0;
+					if (player.GetLandmarks().at(3).GetConstructed() && (curr.GetType() == "Cup" || curr.GetType() == "Bread")) {
+						shoppingMallBonus = 1;
+					}
+					int numCoins = -1;
+					numCoins = activateEstablishment(curr, players.at(i), player, numCurr, shoppingMallBonus);
+					if (numCoins != -1) {
+						giveCoins(player, (1 + shoppingMallBonus) * numCurr);
+					}
+				}
+			}
+		}
+	}
+}
+
+void activatePurples(int roll, Player &player) {
+	//Purple card phase (looping through all establishments of current player)
+	for (unsigned int i = 0; i < player.GetEstablishments().size(); i++) {
+		Establishment curr = player.GetEstablishments().at(i);
+		int numCurr = player.GetEstablishmentNums().at(i);
+		if (curr.GetColor() == "Purple") {
+			if (roll >= curr.GetActivation() && roll <= curr.GetActivation() + curr.GetActivationRange()) {
+				int shoppingMallBonus = 0;
+				if (player.GetLandmarks().at(3).GetConstructed() && (curr.GetType() == "Cup" || curr.GetType() == "Bread")) {
+					shoppingMallBonus = 1;
+				}
+				int numCoins = -1;
+				numCoins = activateEstablishment(curr, player, player, numCurr, shoppingMallBonus);
+				if (numCoins != -1) {
+					giveCoins(player, (1 + shoppingMallBonus) * numCurr);
+				}
+			}
+		}
 	}
 }
 
